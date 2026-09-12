@@ -180,7 +180,6 @@ export default function JetaSistemi() {
   const [newHabit, setNewHabit] = useState("");
   const [newHabitArea, setNewHabitArea] = useState(AREAS[0].id);
   const [newGoalText, setNewGoalText] = useState({});
-  const [activeGroup, setActiveGroup] = useState(NAV_GROUPS[0].id);
   const [history, setHistory] = useState({});
   const [saveState, setSaveState] = useState("idle");
 
@@ -506,9 +505,16 @@ export default function JetaSistemi() {
             {saveState === "saving" ? "duke ruajtur..." : saveState === "saved" ? "ruajtur \u2713" : ""}
           </span>
         </div>
-        <div style={S.streakBox}>
-          <div style={S.streakNum}>{streak}</div>
-          <div style={S.streakLabel}>dite rresht</div>
+        <div style={S.headerRight}>
+          <div style={S.quickIconRow}>
+            <button onClick={() => setTab("sot")} style={{ ...S.quickIconBtn, ...(tab === "sot" ? S.quickIconBtnActive : {}) }} aria-label="Sot" title="Sot">\u270D\uFE0F</button>
+            <button onClick={() => setTab("kalendari")} style={{ ...S.quickIconBtn, ...(tab === "kalendari" ? S.quickIconBtnActive : {}) }} aria-label="Kalendari" title="Kalendari">\uD83D\uDCC5</button>
+            <button onClick={() => setTab("historia")} style={{ ...S.quickIconBtn, ...(tab === "historia" ? S.quickIconBtnActive : {}) }} aria-label="Historia" title="Historia">\uD83D\uDCCA</button>
+          </div>
+          <div style={S.streakBox}>
+            <div style={S.streakNum}>{streak}</div>
+            <div style={S.streakLabel}>dite rresht</div>
+          </div>
         </div>
       </header>
 
@@ -623,25 +629,9 @@ export default function JetaSistemi() {
         </main>
       )}
 
-      {tab === "fushat" && (
+      {NAV_GROUPS.some((g) => g.id === tab) && (
         <main style={S.main}>
-          <div style={S.areaPills}>
-            {NAV_GROUPS.map((grp) => (
-              <button
-                key={grp.id}
-                onClick={() => setActiveGroup(grp.id)}
-                style={{
-                  ...S.areaPill,
-                  borderColor: grp.color,
-                  ...(activeGroup === grp.id ? { background: grp.color, color: "#F6F1E8" } : { color: grp.color }),
-                }}
-              >
-                {grp.label}
-              </button>
-            ))}
-          </div>
-
-          {NAV_GROUPS.find((g) => g.id === activeGroup).areas.map((areaId) => areaById[areaId]).map((a) => {
+          {NAV_GROUPS.find((g) => g.id === tab).areas.map((areaId) => areaById[areaId]).map((a) => {
             const list = goals[a.id] || [];
             const doneCount = list.filter((g) => g.done).length;
             const pct = list.length ? Math.round((doneCount / list.length) * 100) : 0;
@@ -869,19 +859,17 @@ export default function JetaSistemi() {
       <footer style={S.footer}>e ruajtur vetem per ty, ne kete pajisje</footer>
 
       <nav style={S.bottomNav}>
-        {[
-          { id: "sot", label: "Sot", icon: "\u270D\uFE0F" },
-          { id: "fushat", label: "Fushat", icon: "\uD83D\uDDC2\uFE0F" },
-          { id: "kalendari", label: "Kalendari", icon: "\uD83D\uDCC5" },
-          { id: "historia", label: "Historia", icon: "\uD83D\uDCCA" },
-        ].map((t) => (
+        {NAV_GROUPS.map((grp) => (
           <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            style={{ ...S.bottomNavBtn, ...(tab === t.id ? S.bottomNavBtnActive : {}) }}
+            key={grp.id}
+            onClick={() => setTab(grp.id)}
+            style={{
+              ...S.bottomNavBtn,
+              ...(tab === grp.id ? { ...S.bottomNavBtnActive, color: grp.color } : {}),
+            }}
           >
-            <span style={S.bottomNavIcon}>{t.icon}</span>
-            <span>{t.label}</span>
+            <span style={{ ...S.bottomNavDot, background: grp.color, opacity: tab === grp.id ? 1 : 0.35 }} />
+            <span>{grp.label}</span>
           </button>
         ))}
       </nav>
@@ -904,6 +892,10 @@ const S = {
   header: { display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderBottom: "2px solid #22303C", paddingBottom: 14, marginBottom: 6 },
   kicker: { fontSize: 12, letterSpacing: "0.04em", color: "#A63D40", marginBottom: 4 },
   title: { fontSize: 26, margin: 0, fontWeight: 600, color: "#22303C" },
+  headerRight: { display: "flex", alignItems: "center", gap: 14 },
+  quickIconRow: { display: "flex", gap: 6 },
+  quickIconBtn: { fontSize: 16, width: 32, height: 32, borderRadius: 8, border: "1px solid #D8CFC0", background: "#F7F3EC", cursor: "pointer" },
+  quickIconBtnActive: { borderColor: "#22303C", background: "#22303C" },
   streakBox: { textAlign: "center", minWidth: 64 },
   streakNum: { fontSize: 28, fontWeight: 700, color: "#BF9B30", lineHeight: 1 },
   streakLabel: { fontSize: 11, color: "#6B6255", marginTop: 2 },
@@ -938,6 +930,7 @@ const S = {
   },
   bottomNavBtnActive: { color: "#22303C", fontWeight: 700 },
   bottomNavIcon: { fontSize: 20, lineHeight: 1 },
+  bottomNavDot: { width: 8, height: 8, borderRadius: "50%" },
   saveIndicator: { display: "block", marginTop: 4, fontSize: 11, color: "#6B8F71", fontFamily: "system-ui,sans-serif", transition: "opacity .3s" },
   main: { display: "flex", flexDirection: "column", gap: 22 },
   entry: { borderBottom: "1px solid #D8CFC0", paddingBottom: 20 },
