@@ -212,16 +212,18 @@ export default function JetaSistemi() {
       const now = new Date();
       const today = todayKey(now);
       const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
       const sum = (arr, key) => arr.reduce((s, x) => s + (Number(x[key]) || 0), 0);
 
       const [bToday, bMonth, msToday, msMonth, svToday, svMonth, exMonth] = await Promise.all([
         fetch(`${MOLTO_URL}/bookings?select=price&date=eq.${today}`, { headers }).then((r) => r.json()),
-        fetch(`${MOLTO_URL}/bookings?select=price&date=gte.${monthStart}&date=lte.${today}`, { headers }).then((r) => r.json()),
+        fetch(`${MOLTO_URL}/bookings?select=price&date=gte.${monthStart}&date=lte.${monthEnd}`, { headers }).then((r) => r.json()),
         fetch(`${MOLTO_URL}/minisales?select=total&date=eq.${today}`, { headers }).then((r) => r.json()),
-        fetch(`${MOLTO_URL}/minisales?select=total&date=gte.${monthStart}&date=lte.${today}`, { headers }).then((r) => r.json()),
+        fetch(`${MOLTO_URL}/minisales?select=total&date=gte.${monthStart}&date=lte.${monthEnd}`, { headers }).then((r) => r.json()),
         fetch(`${MOLTO_URL}/services?select=price&date=eq.${today}`, { headers }).then((r) => r.json()),
-        fetch(`${MOLTO_URL}/services?select=price&date=gte.${monthStart}&date=lte.${today}`, { headers }).then((r) => r.json()),
-        fetch(`${MOLTO_URL}/expenses?select=amount&date=gte.${monthStart}&date=lte.${today}`, { headers }).then((r) => r.json()),
+        fetch(`${MOLTO_URL}/services?select=price&date=gte.${monthStart}&date=lte.${monthEnd}`, { headers }).then((r) => r.json()),
+        fetch(`${MOLTO_URL}/expenses?select=amount&date=gte.${monthStart}&date=lte.${monthEnd}`, { headers }).then((r) => r.json()),
       ]);
 
       const safe = (x) => (Array.isArray(x) ? x : []);
