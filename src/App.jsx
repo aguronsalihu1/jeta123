@@ -271,6 +271,7 @@ export default function JetaSistemi() {
   const [newExpenseAmount, setNewExpenseAmount] = useState("");
   const [newExpenseNote, setNewExpenseNote] = useState("");
   const [newExpenseMethod, setNewExpenseMethod] = useState("cash");
+  const [newExpenseSource, setNewExpenseSource] = useState("rroga");
 
   const loadFinance = useCallback(async () => {
     try {
@@ -316,7 +317,7 @@ export default function JetaSistemi() {
   const addExpense = async () => {
     const amt = parseFloat(newExpenseAmount);
     if (!amt || amt <= 0) return;
-    const entry = { id: uid(), amount: amt, note: newExpenseNote.trim(), method: newExpenseMethod };
+    const entry = { id: uid(), amount: amt, note: newExpenseNote.trim(), method: newExpenseMethod, source: newExpenseSource };
     const next = [entry, ...todayExpenses];
     setTodayExpenses(next);
     setMonthExpenseTotal((t) => t + amt);
@@ -865,6 +866,21 @@ export default function JetaSistemi() {
                         Karte
                       </button>
                     </div>
+                    <div style={S.methodToggleRow}>
+                      {[
+                        { id: "rroga", label: "Rroga" },
+                        { id: "patroni", label: "Patroni" },
+                        { id: "molto", label: "Molto" },
+                      ].map((s) => (
+                        <button
+                          key={s.id}
+                          onClick={() => setNewExpenseSource(s.id)}
+                          style={{ ...S.methodToggleBtn, ...(newExpenseSource === s.id ? { background: a.color, color: "#F6F1E8", borderColor: a.color } : {}) }}
+                        >
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
                     <div style={S.addRow}>
                       <input
                         type="number"
@@ -929,6 +945,7 @@ export default function JetaSistemi() {
                         <span style={S.goalText}>
                           &euro;{Number(e.amount).toFixed(0)}{e.note ? ` \u2014 ${e.note}` : ""}
                           {e.method && <span style={S.expenseMethodTag}>{e.method === "card" ? "Karte" : "Cash"}</span>}
+                          {e.source && <span style={S.expenseMethodTag}>{e.source === "rroga" ? "Rroga" : e.source === "patroni" ? "Patroni" : "Molto"}</span>}
                         </span>
                         <button onClick={() => removeExpense(e.id)} style={S.habitRemove} aria-label="fshi">×</button>
                       </div>
