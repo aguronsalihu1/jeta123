@@ -182,6 +182,10 @@ export default function JetaSistemi() {
   const [newGoalText, setNewGoalText] = useState({});
   const [history, setHistory] = useState({});
   const [saveState, setSaveState] = useState("idle");
+  const [clock, setClock] = useState(() => {
+    const n = new Date();
+    return `${String(n.getHours()).padStart(2, "0")}:${String(n.getMinutes()).padStart(2, "0")}`;
+  });
 
   const [events, setEvents] = useState({});
   const [calYear, setCalYear] = useState(new Date().getFullYear());
@@ -282,6 +286,14 @@ export default function JetaSistemi() {
       setReady(true);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      const n = new Date();
+      setClock(`${String(n.getHours()).padStart(2, "0")}:${String(n.getMinutes()).padStart(2, "0")}`);
+    }, 15000);
+    return () => clearInterval(id);
   }, []);
 
   const loadDay = async (k) => {
@@ -507,13 +519,14 @@ export default function JetaSistemi() {
         </div>
         <div style={S.headerRight}>
           <div style={S.quickIconRow}>
-            <button onClick={() => setTab("sot")} style={{ ...S.quickIconBtn, ...(tab === "sot" ? S.quickIconBtnActive : {}) }} aria-label="Sot" title="Sot">\u270D\uFE0F</button>
-            <button onClick={() => setTab("kalendari")} style={{ ...S.quickIconBtn, ...(tab === "kalendari" ? S.quickIconBtnActive : {}) }} aria-label="Kalendari" title="Kalendari">\uD83D\uDCC5</button>
-            <button onClick={() => setTab("historia")} style={{ ...S.quickIconBtn, ...(tab === "historia" ? S.quickIconBtnActive : {}) }} aria-label="Historia" title="Historia">\uD83D\uDCCA</button>
+            <button onClick={() => setTab("sot")} style={{ ...S.quickIconBtn, ...(tab === "sot" ? S.quickIconBtnActive : {}) }} aria-label="Sot" title="Sot">✍️</button>
+            <button onClick={() => setTab("kalendari")} style={{ ...S.quickIconBtn, ...(tab === "kalendari" ? S.quickIconBtnActive : {}) }} aria-label="Kalendari" title="Kalendari">📅</button>
+            <button onClick={() => setTab("historia")} style={{ ...S.quickIconBtn, ...(tab === "historia" ? S.quickIconBtnActive : {}) }} aria-label="Historia" title="Historia">📊</button>
           </div>
           <div style={S.streakBox}>
             <div style={S.streakNum}>{streak}</div>
             <div style={S.streakLabel}>dite rresht</div>
+            <div style={S.clockLabel}>{clock}</div>
           </div>
         </div>
       </header>
@@ -899,6 +912,7 @@ const S = {
   streakBox: { textAlign: "center", minWidth: 64 },
   streakNum: { fontSize: 28, fontWeight: 700, color: "#BF9B30", lineHeight: 1 },
   streakLabel: { fontSize: 11, color: "#6B6255", marginTop: 2 },
+  clockLabel: { fontSize: 11, color: "#9C9184", marginTop: 2, fontFamily: "system-ui,sans-serif" },
   bottomNav: {
     position: "fixed",
     bottom: 0,
