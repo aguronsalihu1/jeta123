@@ -273,10 +273,8 @@ export default function JetaSistemi() {
   const [newExpenseMethod, setNewExpenseMethod] = useState("cash");
   const [newExpenseSource, setNewExpenseSource] = useState("rroga");
 
-  const [rrogaSavings, setRrogaSavings] = useState({ balance: 0, log: [] });
   const [cashSavings, setCashSavings] = useState({ balance: 0, log: [] });
   const [rrogaAmount, setRrogaAmount] = useState("");
-  const [rrogaNote, setRrogaNote] = useState("");
   const [cashAmount, setCashAmount] = useState("");
   const [cashNote, setCashNote] = useState("");
 
@@ -305,12 +303,6 @@ export default function JetaSistemi() {
       }
       setMonthExpenseTotal(total);
     } catch {}
-    try {
-      const rr = await storage.get("savings-rroga");
-      setRrogaSavings(rr ? JSON.parse(rr.value) : { balance: 0, log: [] });
-    } catch {
-      setRrogaSavings({ balance: 0, log: [] });
-    }
     try {
       const cs = await storage.get("savings-cash");
       setCashSavings(cs ? JSON.parse(cs.value) : { balance: 0, log: [] });
@@ -361,22 +353,18 @@ export default function JetaSistemi() {
     const amt = parseFloat(amountStr);
     if (!amt || amt <= 0) return;
     const entry = { id: uid(), amount: sign * amt, note: note.trim(), date: todayKey() };
-    const current = which === "rroga" ? rrogaSavings : cashSavings;
-    const next = { balance: current.balance + entry.amount, log: [entry, ...current.log] };
-    if (which === "rroga") setRrogaSavings(next);
-    else setCashSavings(next);
+    const next = { balance: cashSavings.balance + entry.amount, log: [entry, ...cashSavings.log] };
+    setCashSavings(next);
     try {
       await storage.set(`savings-${which}`, JSON.stringify(next));
     } catch {}
   };
 
   const removeSavingsMovement = async (which, id) => {
-    const current = which === "rroga" ? rrogaSavings : cashSavings;
-    const removed = current.log.find((m) => m.id === id);
+    const removed = cashSavings.log.find((m) => m.id === id);
     if (!removed) return;
-    const next = { balance: current.balance - removed.amount, log: current.log.filter((m) => m.id !== id) };
-    if (which === "rroga") setRrogaSavings(next);
-    else setCashSavings(next);
+    const next = { balance: cashSavings.balance - removed.amount, log: cashSavings.log.filter((m) => m.id !== id) };
+    setCashSavings(next);
     try {
       await storage.set(`savings-${which}`, JSON.stringify(next));
     } catch {}
@@ -955,7 +943,7 @@ export default function JetaSistemi() {
                 {a.id === "financa" && (
                   <div style={S.financeBox}>
                     <div style={S.financeIncomeRow}>
-                      <span style={S.financeIncomeLabel}>Rroga (Patron Dantel) &mdash; neto/muaj</span>
+                      <span style={S.financeIncomeLabel}>Xhirollogari Bankare PCB</span>
                       <div style={S.financeIncomeInputWrap}>
                         <span>&euro;</span>
                         <input
@@ -966,39 +954,14 @@ export default function JetaSistemi() {
                         />
                       </div>
                     </div>
-
-                    <div style={S.savingsCard}>
-                      <div style={S.savingsHead}>
-                        <span style={S.savingsTitle}>Kursime &mdash; Rroga</span>
-                        <span style={S.savingsBalance}>&euro;{rrogaSavings.balance.toFixed(0)}</span>
-                      </div>
-                      <div style={S.addRow}>
-                        <input type="number" value={rrogaAmount} onChange={(e) => setRrogaAmount(e.target.value)} placeholder="Shuma &euro;" style={{ ...S.addInput, maxWidth: 90 }} />
-                        <input value={rrogaNote} onChange={(e) => setRrogaNote(e.target.value)} placeholder="Shenim (opsionale)" style={S.addInput} />
-                      </div>
-                      <div style={S.methodToggleRow}>
-                        <button
-                          onClick={() => { addSavingsMovement("rroga", 1, rrogaAmount, rrogaNote); setRrogaAmount(""); setRrogaNote(""); }}
-                          style={{ ...S.addBtn, background: "#6B8F71" }}
-                        >
-                          + Shto
-                        </button>
-                        <button
-                          onClick={() => { addSavingsMovement("rroga", -1, rrogaAmount, rrogaNote); setRrogaAmount(""); setRrogaNote(""); }}
-                          style={{ ...S.addBtn, background: "#A63D40" }}
-                        >
-                          - Heq
-                        </button>
-                      </div>
-                      {rrogaSavings.log.slice(0, 5).map((m) => (
-                        <div key={m.id} style={S.goalRow}>
-                          <span style={{ ...S.goalText, color: m.amount >= 0 ? "#6B8F71" : "#A63D40" }}>
-                            {m.amount >= 0 ? "+" : ""}
-                            &euro;{m.amount.toFixed(0)}{m.note ? ` \u2014 ${m.note}` : ""}
-                          </span>
-                          <button onClick={() => removeSavingsMovement("rroga", m.id)} style={S.habitRemove} aria-label="fshi">×</button>
-                        </div>
-                      ))}
+                    <div style={S.addRow}>
+                      <input type="number" value={rrogaAmount} onChange={(e) => setRrogaAmount(e.target.value)} placeholder="Shuma e depozites &euro;" style={S.addInput} />
+                      <button
+                        onClick={() => { const amt = parseFloat(rrogaAmount); if (amt > 0) { persistIncome(financeIncome + amt); setRrogaAmount(""); } }}
+                        style={{ ...S.addBtn, background: "#6B8F71" }}
+                      >
+                        + Depozito
+                      </button>
                     </div>
 
                     <div style={S.financeSummaryRow}>
