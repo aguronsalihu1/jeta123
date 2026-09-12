@@ -214,20 +214,29 @@ export default function JetaSistemi() {
       const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
       const sum = (arr, key) => arr.reduce((s, x) => s + (Number(x[key]) || 0), 0);
 
-      const [bToday, bMonth, msMonth, exMonth] = await Promise.all([
+      const [bToday, bMonth, msToday, msMonth, svToday, svMonth, exMonth] = await Promise.all([
         fetch(`${MOLTO_URL}/bookings?select=price&date=eq.${today}`, { headers }).then((r) => r.json()),
         fetch(`${MOLTO_URL}/bookings?select=price&date=gte.${monthStart}&date=lte.${today}`, { headers }).then((r) => r.json()),
+        fetch(`${MOLTO_URL}/minisales?select=total&date=eq.${today}`, { headers }).then((r) => r.json()),
         fetch(`${MOLTO_URL}/minisales?select=total&date=gte.${monthStart}&date=lte.${today}`, { headers }).then((r) => r.json()),
+        fetch(`${MOLTO_URL}/services?select=price&date=eq.${today}`, { headers }).then((r) => r.json()),
+        fetch(`${MOLTO_URL}/services?select=price&date=gte.${monthStart}&date=lte.${today}`, { headers }).then((r) => r.json()),
         fetch(`${MOLTO_URL}/expenses?select=amount&date=gte.${monthStart}&date=lte.${today}`, { headers }).then((r) => r.json()),
       ]);
 
-      const todayCount = Array.isArray(bToday) ? bToday.length : 0;
-      const todayTotal = Array.isArray(bToday) ? sum(bToday, "price") : 0;
-      const monthCount = Array.isArray(bMonth) ? bMonth.length : 0;
-      const monthBookings = Array.isArray(bMonth) ? sum(bMonth, "price") : 0;
-      const monthMinibar = Array.isArray(msMonth) ? sum(msMonth, "total") : 0;
-      const monthExpenses = Array.isArray(exMonth) ? sum(exMonth, "amount") : 0;
-      const monthRevenue = monthBookings + monthMinibar;
+      const safe = (x) => (Array.isArray(x) ? x : []);
+      const todayBookingsTotal = sum(safe(bToday), "price");
+      const todayMinibarTotal = sum(safe(msToday), "total");
+      const todayServicesTotal = sum(safe(svToday), "price");
+      const todayCount = safe(bToday).length + safe(svToday).length;
+      const todayTotal = todayBookingsTotal + todayMinibarTotal + todayServicesTotal;
+
+      const monthBookings = sum(safe(bMonth), "price");
+      const monthMinibar = sum(safe(msMonth), "total");
+      const monthServices = sum(safe(svMonth), "price");
+      const monthCount = safe(bMonth).length + safe(svMonth).length;
+      const monthExpenses = sum(safe(exMonth), "amount");
+      const monthRevenue = monthBookings + monthMinibar + monthServices;
 
       setMoltoState({
         status: "ready",
@@ -235,6 +244,9 @@ export default function JetaSistemi() {
         todayTotal,
         monthCount,
         monthRevenue,
+        monthBookings,
+        monthMinibar,
+        monthServices,
         monthExpenses,
         monthProfit: monthRevenue - monthExpenses,
         updatedAt: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
@@ -730,6 +742,9 @@ export default function JetaSistemi() {
                             <span style={S.moltoStatLabel}>Ky muaj</span>
                             <span style={S.moltoStatValue}>{moltoState.monthCount} rezervime &middot; te ardhura {moltoState.monthRevenue.toFixed(0)}&euro;</span>
                           </div>
+                          <div style={S.moltoBreakdown}>
+                            rezervime {moltoState.monthBookings.toFixed(0)}&euro; &middot; mini-bar {moltoState.monthMinibar.toFixed(0)}&euro; &middot; sherbime {moltoState.monthServices.toFixed(0)}&euro;
+                          </div>
                           <div style={S.moltoStatRow}>
                             <span style={S.moltoStatLabel}>Shpenzime (muaj)</span>
                             <span style={S.moltoStatValue}>{moltoState.monthExpenses.toFixed(0)}&euro;</span>
@@ -1069,6 +1084,7 @@ const S = {
   moltoStatRow: { display: "flex", justifyContent: "space-between", fontSize: 13 },
   moltoStatLabel: { color: "#6B6255" },
   moltoStatValue: { color: "#22303C" },
+  moltoBreakdown: { fontFamily: "system-ui,sans-serif", fontSize: 11, color: "#9C9184" },
   moltoUpdated: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, fontSize: 11, color: "#9C9184", marginTop: 2 },
   moltoRefreshBtn: { background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#6B6255", padding: 0 },
   quickRow: { display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" },
