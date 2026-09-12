@@ -1001,6 +1001,35 @@ export default function JetaSistemi() {
                       ))}
                     </div>
 
+                    <div style={S.financeSummaryRow}>
+                      <div style={S.financeSummaryCard}>
+                        <div style={S.financeSummaryLabel}>Shpenzuar ky muaj</div>
+                        <div style={S.financeSummaryValue}>&euro;{monthExpenseTotal.toFixed(0)}</div>
+                      </div>
+                      <div style={S.financeSummaryCard}>
+                        <div style={S.financeSummaryLabel}>Mbetet nga rroga</div>
+                        <div style={{ ...S.financeSummaryValue, color: financeIncome - monthExpenseTotal >= 0 ? "#6B8F71" : "#A63D40" }}>
+                          &euro;{(financeIncome - monthExpenseTotal).toFixed(0)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={S.entryHead}>
+                      <span style={S.entryLabel}>Shpenzimet e sotme</span>
+                      <span style={S.entryMeta}>&euro;{todayExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0).toFixed(0)}</span>
+                    </div>
+                    {todayExpenses.map((e) => (
+                      <div key={e.id} style={S.goalRow}>
+                        <span style={S.goalText}>
+                          &euro;{Number(e.amount).toFixed(0)}{e.note ? ` \u2014 ${e.note}` : ""}
+                          {e.method && <span style={S.expenseMethodTag}>{e.method === "card" ? "Karte" : "Cash"}</span>}
+                          {e.source && <span style={S.expenseMethodTag}>{e.source === "rroga" ? "Rroga" : e.source === "patroni" ? "Patroni" : "Molto"}</span>}
+                        </span>
+                        <button onClick={() => removeExpense(e.id)} style={S.habitRemove} aria-label="fshi">×</button>
+                      </div>
+                    ))}
+                    {!todayExpenses.length && <div style={S.emptyHint}>Ende s'ke shenuar shpenzim sot.</div>}
+
                     <div style={S.savingsCard}>
                       <div style={S.savingsHead}>
                         <span style={S.savingsTitle}>Kursime Cash</span>
@@ -1034,35 +1063,6 @@ export default function JetaSistemi() {
                         </div>
                       ))}
                     </div>
-
-                    <div style={S.financeSummaryRow}>
-                      <div style={S.financeSummaryCard}>
-                        <div style={S.financeSummaryLabel}>Shpenzuar ky muaj</div>
-                        <div style={S.financeSummaryValue}>&euro;{monthExpenseTotal.toFixed(0)}</div>
-                      </div>
-                      <div style={S.financeSummaryCard}>
-                        <div style={S.financeSummaryLabel}>Mbetet nga rroga</div>
-                        <div style={{ ...S.financeSummaryValue, color: financeIncome - monthExpenseTotal >= 0 ? "#6B8F71" : "#A63D40" }}>
-                          &euro;{(financeIncome - monthExpenseTotal).toFixed(0)}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div style={S.entryHead}>
-                      <span style={S.entryLabel}>Shpenzimet e sotme</span>
-                      <span style={S.entryMeta}>&euro;{todayExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0).toFixed(0)}</span>
-                    </div>
-                    {todayExpenses.map((e) => (
-                      <div key={e.id} style={S.goalRow}>
-                        <span style={S.goalText}>
-                          &euro;{Number(e.amount).toFixed(0)}{e.note ? ` \u2014 ${e.note}` : ""}
-                          {e.method && <span style={S.expenseMethodTag}>{e.method === "card" ? "Karte" : "Cash"}</span>}
-                          {e.source && <span style={S.expenseMethodTag}>{e.source === "rroga" ? "Rroga" : e.source === "patroni" ? "Patroni" : "Molto"}</span>}
-                        </span>
-                        <button onClick={() => removeExpense(e.id)} style={S.habitRemove} aria-label="fshi">×</button>
-                      </div>
-                    ))}
-                    {!todayExpenses.length && <div style={S.emptyHint}>Ende s'ke shenuar shpenzim sot.</div>}
                   </div>
                 )}
 
