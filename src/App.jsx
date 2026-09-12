@@ -788,7 +788,7 @@ export default function JetaSistemi() {
               <section key={a.id} style={S.entry}>
                 <div style={S.entryHead}>
                   <span style={{ ...S.entryLabel, color: a.color }}>{a.label}</span>
-                  <span style={S.entryMeta}>{doneCount}/{list.length}</span>
+                  {!["biznesi", "financa"].includes(a.id) && <span style={S.entryMeta}>{doneCount}/{list.length}</span>}
                 </div>
 
                 {a.id === "ushqim" && (
@@ -948,34 +948,38 @@ export default function JetaSistemi() {
                   </div>
                 )}
 
-                <div style={S.progressTrack}>
-                  <div style={{ ...S.progressFill, width: `${pct}%`, background: a.color }} />
-                </div>
-                <div style={{ marginTop: 14 }}>
-                  {list.map((g) => (
-                    <div key={g.id} style={S.goalRow}>
-                      <button
-                        onClick={() => toggleGoal(a.id, g.id)}
-                        style={{ ...S.checkbox, ...(g.done ? { background: a.color, borderColor: a.color, color: "#F6F1E8" } : {}) }}
-                      >
-                        {g.done ? "\u2713" : ""}
-                      </button>
-                      <span style={{ ...S.goalText, ...(g.done ? S.goalTextDone : {}) }}>{g.text}</span>
-                      <button onClick={() => removeGoal(a.id, g.id)} style={S.habitRemove} aria-label="fshi">×</button>
+                {!["biznesi", "financa"].includes(a.id) && (
+                  <>
+                    <div style={S.progressTrack}>
+                      <div style={{ ...S.progressFill, width: `${pct}%`, background: a.color }} />
                     </div>
-                  ))}
-                  {!list.length && <div style={S.emptyHint}>Ende s'ke shenuar synime ketu.</div>}
-                </div>
-                <div style={S.addRow}>
-                  <input
-                    value={newGoalText[a.id] || ""}
-                    onChange={(e) => setNewGoalText({ ...newGoalText, [a.id]: e.target.value })}
-                    onKeyDown={(e) => e.key === "Enter" && addGoal(a.id)}
-                    placeholder="Shto nje synim..."
-                    style={S.addInput}
-                  />
-                  <button onClick={() => addGoal(a.id)} style={{ ...S.addBtn, background: a.color }}>Shto</button>
-                </div>
+                    <div style={{ marginTop: 14 }}>
+                      {list.map((g) => (
+                        <div key={g.id} style={S.goalRow}>
+                          <button
+                            onClick={() => toggleGoal(a.id, g.id)}
+                            style={{ ...S.checkbox, ...(g.done ? { background: a.color, borderColor: a.color, color: "#F6F1E8" } : {}) }}
+                          >
+                            {g.done ? "\u2713" : ""}
+                          </button>
+                          <span style={{ ...S.goalText, ...(g.done ? S.goalTextDone : {}) }}>{g.text}</span>
+                          <button onClick={() => removeGoal(a.id, g.id)} style={S.habitRemove} aria-label="fshi">×</button>
+                        </div>
+                      ))}
+                      {!list.length && <div style={S.emptyHint}>Ende s'ke shenuar synime ketu.</div>}
+                    </div>
+                    <div style={S.addRow}>
+                      <input
+                        value={newGoalText[a.id] || ""}
+                        onChange={(e) => setNewGoalText({ ...newGoalText, [a.id]: e.target.value })}
+                        onKeyDown={(e) => e.key === "Enter" && addGoal(a.id)}
+                        placeholder="Shto nje synim..."
+                        style={S.addInput}
+                      />
+                      <button onClick={() => addGoal(a.id)} style={{ ...S.addBtn, background: a.color }}>Shto</button>
+                    </div>
+                  </>
+                )}
               </section>
             );
           })}
