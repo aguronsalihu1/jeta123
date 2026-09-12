@@ -270,6 +270,7 @@ export default function JetaSistemi() {
   const [monthExpenseTotal, setMonthExpenseTotal] = useState(0);
   const [newExpenseAmount, setNewExpenseAmount] = useState("");
   const [newExpenseNote, setNewExpenseNote] = useState("");
+  const [newExpenseMethod, setNewExpenseMethod] = useState("cash");
 
   const loadFinance = useCallback(async () => {
     try {
@@ -315,7 +316,7 @@ export default function JetaSistemi() {
   const addExpense = async () => {
     const amt = parseFloat(newExpenseAmount);
     if (!amt || amt <= 0) return;
-    const entry = { id: uid(), amount: amt, note: newExpenseNote.trim() };
+    const entry = { id: uid(), amount: amt, note: newExpenseNote.trim(), method: newExpenseMethod };
     const next = [entry, ...todayExpenses];
     setTodayExpenses(next);
     setMonthExpenseTotal((t) => t + amt);
@@ -848,6 +849,42 @@ export default function JetaSistemi() {
                   </div>
                 )}
 
+                {a.id === "biznesi" && (
+                  <div style={S.expenseAddBox}>
+                    <div style={S.methodToggleRow}>
+                      <button
+                        onClick={() => setNewExpenseMethod("cash")}
+                        style={{ ...S.methodToggleBtn, ...(newExpenseMethod === "cash" ? { background: a.color, color: "#F6F1E8", borderColor: a.color } : {}) }}
+                      >
+                        Cash
+                      </button>
+                      <button
+                        onClick={() => setNewExpenseMethod("card")}
+                        style={{ ...S.methodToggleBtn, ...(newExpenseMethod === "card" ? { background: a.color, color: "#F6F1E8", borderColor: a.color } : {}) }}
+                      >
+                        Karte
+                      </button>
+                    </div>
+                    <div style={S.addRow}>
+                      <input
+                        type="number"
+                        value={newExpenseAmount}
+                        onChange={(e) => setNewExpenseAmount(e.target.value)}
+                        placeholder="Shuma &euro;"
+                        style={{ ...S.addInput, maxWidth: 90 }}
+                      />
+                      <input
+                        value={newExpenseNote}
+                        onChange={(e) => setNewExpenseNote(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && addExpense()}
+                        placeholder="Per cka (opsionale)"
+                        style={S.addInput}
+                      />
+                      <button onClick={addExpense} style={{ ...S.addBtn, background: a.color }}>Shto</button>
+                    </div>
+                  </div>
+                )}
+
                 {a.id === "gym" && (
                   <div style={{ ...S.callout, borderColor: a.color }}>
                     Programi: 2 jave ecje/vrapim 1 ore &rarr; 2 jave ecje/vrapim + barku &rarr; pas 1 muaji, force per muskuj.
@@ -889,28 +926,14 @@ export default function JetaSistemi() {
                     </div>
                     {todayExpenses.map((e) => (
                       <div key={e.id} style={S.goalRow}>
-                        <span style={S.goalText}>&euro;{Number(e.amount).toFixed(0)}{e.note ? ` \u2014 ${e.note}` : ""}</span>
+                        <span style={S.goalText}>
+                          &euro;{Number(e.amount).toFixed(0)}{e.note ? ` \u2014 ${e.note}` : ""}
+                          {e.method && <span style={S.expenseMethodTag}>{e.method === "card" ? "Karte" : "Cash"}</span>}
+                        </span>
                         <button onClick={() => removeExpense(e.id)} style={S.habitRemove} aria-label="fshi">×</button>
                       </div>
                     ))}
                     {!todayExpenses.length && <div style={S.emptyHint}>Ende s'ke shenuar shpenzim sot.</div>}
-                    <div style={S.addRow}>
-                      <input
-                        type="number"
-                        value={newExpenseAmount}
-                        onChange={(e) => setNewExpenseAmount(e.target.value)}
-                        placeholder="Shuma &euro;"
-                        style={{ ...S.addInput, maxWidth: 90 }}
-                      />
-                      <input
-                        value={newExpenseNote}
-                        onChange={(e) => setNewExpenseNote(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && addExpense()}
-                        placeholder="Per cka (opsionale)"
-                        style={S.addInput}
-                      />
-                      <button onClick={addExpense} style={{ ...S.addBtn, background: a.color }}>Shto</button>
-                    </div>
                   </div>
                 )}
 
@@ -1233,6 +1256,10 @@ const S = {
   financeSummaryCard: { flex: 1, background: "#F7F3EC", border: "1px solid #D8CFC0", borderRadius: 8, padding: "10px 12px", textAlign: "center" },
   financeSummaryLabel: { fontFamily: "system-ui,sans-serif", fontSize: 11, color: "#6B6255", marginBottom: 4 },
   financeSummaryValue: { fontSize: 18, fontWeight: 700, color: "#22303C" },
+  expenseAddBox: { marginBottom: 16, display: "flex", flexDirection: "column", gap: 8 },
+  methodToggleRow: { display: "flex", gap: 6 },
+  methodToggleBtn: { fontFamily: "system-ui,sans-serif", fontSize: 12, padding: "6px 14px", borderRadius: 16, border: "1.5px solid #D8CFC0", background: "#FFFFFF", color: "#6B6255", cursor: "pointer" },
+  expenseMethodTag: { fontFamily: "system-ui,sans-serif", fontSize: 10, color: "#9C9184", marginLeft: 6, border: "1px solid #D8CFC0", borderRadius: 8, padding: "1px 6px" },
   quickRow: { display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" },
   tipsBox: { fontFamily: "system-ui,sans-serif", fontSize: 13, color: "#4A4238", lineHeight: 1.6, marginBottom: 16, display: "flex", flexDirection: "column", gap: 4 },
   tipRow: {},
