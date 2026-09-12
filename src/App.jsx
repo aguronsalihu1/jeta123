@@ -264,6 +264,78 @@ export default function JetaSistemi() {
     }
   }, [tab, moltoState.status, fetchMoltoStats]);
 
+  const [financeIncome, setFinanceIncome] = useState(880);
+  const [financeLoaded, setFinanceLoaded] = useState(false);
+  const [todayExpenses, setTodayExpenses] = useState([]);
+  const [monthExpenseTotal, setMonthExpenseTotal] = useState(0);
+  const [newExpenseAmount, setNewExpenseAmount] = useState("");
+  const [newExpenseNote, setNewExpenseNote] = useState("");
+
+  const loadFinance = useCallback(async () => {
+    try {
+      const incomeRes = await storage.get("finance-income");
+      setFinanceIncome(incomeRes ? Number(incomeRes.value) : 880);
+    } catch {}
+    try {
+      const tres = await storage.get(`expenses:${todayKey()}`);
+      setTodayExpenses(tres ? JSON.parse(tres.value) : []);
+    } catch {
+      setTodayExpenses([]);
+    }
+    try {
+      const list = await storage.list("expenses:");
+      const monthPrefix = todayKey().slice(0, 7);
+      const keys = (list?.keys || []).filter((k) => k.startsWith(monthPrefix));
+      let total = 0;
+      for (const k of keys) {
+        try {
+          const r = await storage.get(`expenses:${k}`);
+          const arr = r ? JSON.parse(r.value) : [];
+          total += arr.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+        } catch {}
+      }
+      setMonthExpenseTotal(total);
+    } catch {}
+    setFinanceLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (tab === "biznes" && !financeLoaded) {
+      loadFinance();
+    }
+  }, [tab, financeLoaded, loadFinance]);
+
+  const persistIncome = async (val) => {
+    setFinanceIncome(val);
+    try {
+      await storage.set("finance-income", String(val));
+    } catch {}
+  };
+
+  const addExpense = async () => {
+    const amt = parseFloat(newExpenseAmount);
+    if (!amt || amt <= 0) return;
+    const entry = { id: uid(), amount: amt, note: newExpenseNote.trim() };
+    const next = [entry, ...todayExpenses];
+    setTodayExpenses(next);
+    setMonthExpenseTotal((t) => t + amt);
+    try {
+      await storage.set(`expenses:${todayKey()}`, JSON.stringify(next));
+    } catch {}
+    setNewExpenseAmount("");
+    setNewExpenseNote("");
+  };
+
+  const removeExpense = async (id) => {
+    const removed = todayExpenses.find((e) => e.id === id);
+    const next = todayExpenses.filter((e) => e.id !== id);
+    setTodayExpenses(next);
+    if (removed) setMonthExpenseTotal((t) => t - (Number(removed.amount) || 0));
+    try {
+      await storage.set(`expenses:${todayKey()}`, JSON.stringify(next));
+    } catch {}
+  };
+
   // ---------- load ----------
   useEffect(() => {
     (async () => {
@@ -783,6 +855,65 @@ export default function JetaSistemi() {
                   </div>
                 )}
 
+                {a.id === "financa" && (
+                  <div style={S.financeBox}>
+                    <div style={S.financeIncomeRow}>
+                      <span style={S.financeIncomeLabel}>Rroga (Patron Dantel) &mdash; neto/muaj</span>
+                      <div style={S.financeIncomeInputWrap}>
+                        <span>&euro;</span>
+                        <input
+                          type="number"
+                          value={financeIncome}
+                          onChange={(e) => persistIncome(e.target.value === "" ? 0 : Number(e.target.value))}
+                          style={S.financeIncomeInput}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={S.financeSummaryRow}>
+                      <div style={S.financeSummaryCard}>
+                        <div style={S.financeSummaryLabel}>Shpenzuar ky muaj</div>
+                        <div style={S.financeSummaryValue}>&euro;{monthExpenseTotal.toFixed(0)}</div>
+                      </div>
+                      <div style={S.financeSummaryCard}>
+                        <div style={S.financeSummaryLabel}>Mbetet nga rroga</div>
+                        <div style={{ ...S.financeSummaryValue, color: financeIncome - monthExpenseTotal >= 0 ? "#6B8F71" : "#A63D40" }}>
+                          &euro;{(financeIncome - monthExpenseTotal).toFixed(0)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={S.entryHead}>
+                      <span style={S.entryLabel}>Shpenzimet e sotme</span>
+                      <span style={S.entryMeta}>&euro;{todayExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0).toFixed(0)}</span>
+                    </div>
+                    {todayExpenses.map((e) => (
+                      <div key={e.id} style={S.goalRow}>
+                        <span style={S.goalText}>&euro;{Number(e.amount).toFixed(0)}{e.note ? ` \u2014 ${e.note}` : ""}</span>
+                        <button onClick={() => removeExpense(e.id)} style={S.habitRemove} aria-label="fshi">×</button>
+                      </div>
+                    ))}
+                    {!todayExpenses.length && <div style={S.emptyHint}>Ende s'ke shenuar shpenzim sot.</div>}
+                    <div style={S.addRow}>
+                      <input
+                        type="number"
+                        value={newExpenseAmount}
+                        onChange={(e) => setNewExpenseAmount(e.target.value)}
+                        placeholder="Shuma &euro;"
+                        style={{ ...S.addInput, maxWidth: 90 }}
+                      />
+                      <input
+                        value={newExpenseNote}
+                        onChange={(e) => setNewExpenseNote(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && addExpense()}
+                        placeholder="Per cka (opsionale)"
+                        style={S.addInput}
+                      />
+                      <button onClick={addExpense} style={{ ...S.addBtn, background: a.color }}>Shto</button>
+                    </div>
+                  </div>
+                )}
+
                 {a.id === "marredhenie" && (
                   <>
                     <div style={S.quickRow}>
@@ -1089,6 +1220,15 @@ const S = {
   moltoBreakdown: { fontFamily: "system-ui,sans-serif", fontSize: 11, color: "#9C9184" },
   moltoUpdated: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, fontSize: 11, color: "#9C9184", marginTop: 2 },
   moltoRefreshBtn: { background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#6B6255", padding: 0 },
+  financeBox: { marginBottom: 16, display: "flex", flexDirection: "column", gap: 14 },
+  financeIncomeRow: { display: "flex", justifyContent: "space-between", alignItems: "center", fontFamily: "system-ui,sans-serif", fontSize: 13, background: "#F7F3EC", border: "1px solid #D8CFC0", borderRadius: 8, padding: "10px 12px" },
+  financeIncomeLabel: { color: "#6B6255" },
+  financeIncomeInputWrap: { display: "flex", alignItems: "center", gap: 4, fontWeight: 700, color: "#22303C" },
+  financeIncomeInput: { width: 64, fontFamily: "system-ui,sans-serif", fontSize: 14, fontWeight: 700, padding: "4px 6px", borderRadius: 6, border: "1px solid #D8CFC0", background: "#FFFFFF", color: "#22303C" },
+  financeSummaryRow: { display: "flex", gap: 10 },
+  financeSummaryCard: { flex: 1, background: "#F7F3EC", border: "1px solid #D8CFC0", borderRadius: 8, padding: "10px 12px", textAlign: "center" },
+  financeSummaryLabel: { fontFamily: "system-ui,sans-serif", fontSize: 11, color: "#6B6255", marginBottom: 4 },
+  financeSummaryValue: { fontSize: 18, fontWeight: 700, color: "#22303C" },
   quickRow: { display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" },
   tipsBox: { fontFamily: "system-ui,sans-serif", fontSize: 13, color: "#4A4238", lineHeight: 1.6, marginBottom: 16, display: "flex", flexDirection: "column", gap: 4 },
   tipRow: {},
