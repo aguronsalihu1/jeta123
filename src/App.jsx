@@ -286,8 +286,8 @@ export default function JetaSistemi() {
     }
     try {
       const list = await storage.list("expenses:");
-      const monthPrefix = todayKey().slice(0, 7);
-      const keys = (list?.keys || []).filter((k) => k.startsWith(monthPrefix));
+      const monthPrefix = `expenses:${todayKey().slice(0, 7)}`;
+      const keys = (list?.keys || []).filter((k) => k.startsWith(monthPrefix)).map((k) => k.replace(/^expenses:/, ""));
       let total = 0;
       for (const k of keys) {
         try {
