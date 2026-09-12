@@ -273,6 +273,13 @@ export default function JetaSistemi() {
   const [newExpenseMethod, setNewExpenseMethod] = useState("cash");
   const [newExpenseSource, setNewExpenseSource] = useState("rroga");
 
+  const [rrogaSavings, setRrogaSavings] = useState({ balance: 0, log: [] });
+  const [cashSavings, setCashSavings] = useState({ balance: 0, log: [] });
+  const [rrogaAmount, setRrogaAmount] = useState("");
+  const [rrogaNote, setRrogaNote] = useState("");
+  const [cashAmount, setCashAmount] = useState("");
+  const [cashNote, setCashNote] = useState("");
+
   const loadFinance = useCallback(async () => {
     try {
       const incomeRes = await storage.get("finance-income");
@@ -298,6 +305,18 @@ export default function JetaSistemi() {
       }
       setMonthExpenseTotal(total);
     } catch {}
+    try {
+      const rr = await storage.get("savings-rroga");
+      setRrogaSavings(rr ? JSON.parse(rr.value) : { balance: 0, log: [] });
+    } catch {
+      setRrogaSavings({ balance: 0, log: [] });
+    }
+    try {
+      const cs = await storage.get("savings-cash");
+      setCashSavings(cs ? JSON.parse(cs.value) : { balance: 0, log: [] });
+    } catch {
+      setCashSavings({ balance: 0, log: [] });
+    }
     setFinanceLoaded(true);
   }, []);
 
@@ -335,6 +354,31 @@ export default function JetaSistemi() {
     if (removed) setMonthExpenseTotal((t) => t - (Number(removed.amount) || 0));
     try {
       await storage.set(`expenses:${todayKey()}`, JSON.stringify(next));
+    } catch {}
+  };
+
+  const addSavingsMovement = async (which, sign, amountStr, note) => {
+    const amt = parseFloat(amountStr);
+    if (!amt || amt <= 0) return;
+    const entry = { id: uid(), amount: sign * amt, note: note.trim(), date: todayKey() };
+    const current = which === "rroga" ? rrogaSavings : cashSavings;
+    const next = { balance: current.balance + entry.amount, log: [entry, ...current.log] };
+    if (which === "rroga") setRrogaSavings(next);
+    else setCashSavings(next);
+    try {
+      await storage.set(`savings-${which}`, JSON.stringify(next));
+    } catch {}
+  };
+
+  const removeSavingsMovement = async (which, id) => {
+    const current = which === "rroga" ? rrogaSavings : cashSavings;
+    const removed = current.log.find((m) => m.id === id);
+    if (!removed) return;
+    const next = { balance: current.balance - removed.amount, log: current.log.filter((m) => m.id !== id) };
+    if (which === "rroga") setRrogaSavings(next);
+    else setCashSavings(next);
+    try {
+      await storage.set(`savings-${which}`, JSON.stringify(next));
     } catch {}
   };
 
@@ -923,6 +967,74 @@ export default function JetaSistemi() {
                       </div>
                     </div>
 
+                    <div style={S.savingsCard}>
+                      <div style={S.savingsHead}>
+                        <span style={S.savingsTitle}>Kursime &mdash; Rroga</span>
+                        <span style={S.savingsBalance}>&euro;{rrogaSavings.balance.toFixed(0)}</span>
+                      </div>
+                      <div style={S.addRow}>
+                        <input type="number" value={rrogaAmount} onChange={(e) => setRrogaAmount(e.target.value)} placeholder="Shuma &euro;" style={{ ...S.addInput, maxWidth: 90 }} />
+                        <input value={rrogaNote} onChange={(e) => setRrogaNote(e.target.value)} placeholder="Shenim (opsionale)" style={S.addInput} />
+                      </div>
+                      <div style={S.methodToggleRow}>
+                        <button
+                          onClick={() => { addSavingsMovement("rroga", 1, rrogaAmount, rrogaNote); setRrogaAmount(""); setRrogaNote(""); }}
+                          style={{ ...S.addBtn, background: "#6B8F71" }}
+                        >
+                          + Shto
+                        </button>
+                        <button
+                          onClick={() => { addSavingsMovement("rroga", -1, rrogaAmount, rrogaNote); setRrogaAmount(""); setRrogaNote(""); }}
+                          style={{ ...S.addBtn, background: "#A63D40" }}
+                        >
+                          - Heq
+                        </button>
+                      </div>
+                      {rrogaSavings.log.slice(0, 5).map((m) => (
+                        <div key={m.id} style={S.goalRow}>
+                          <span style={{ ...S.goalText, color: m.amount >= 0 ? "#6B8F71" : "#A63D40" }}>
+                            {m.amount >= 0 ? "+" : ""}
+                            &euro;{m.amount.toFixed(0)}{m.note ? ` \u2014 ${m.note}` : ""}
+                          </span>
+                          <button onClick={() => removeSavingsMovement("rroga", m.id)} style={S.habitRemove} aria-label="fshi">×</button>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div style={S.savingsCard}>
+                      <div style={S.savingsHead}>
+                        <span style={S.savingsTitle}>Kursime Cash</span>
+                        <span style={S.savingsBalance}>&euro;{cashSavings.balance.toFixed(0)}</span>
+                      </div>
+                      <div style={S.addRow}>
+                        <input type="number" value={cashAmount} onChange={(e) => setCashAmount(e.target.value)} placeholder="Shuma &euro;" style={{ ...S.addInput, maxWidth: 90 }} />
+                        <input value={cashNote} onChange={(e) => setCashNote(e.target.value)} placeholder="Shenim (opsionale)" style={S.addInput} />
+                      </div>
+                      <div style={S.methodToggleRow}>
+                        <button
+                          onClick={() => { addSavingsMovement("cash", 1, cashAmount, cashNote); setCashAmount(""); setCashNote(""); }}
+                          style={{ ...S.addBtn, background: "#6B8F71" }}
+                        >
+                          + Shto
+                        </button>
+                        <button
+                          onClick={() => { addSavingsMovement("cash", -1, cashAmount, cashNote); setCashAmount(""); setCashNote(""); }}
+                          style={{ ...S.addBtn, background: "#A63D40" }}
+                        >
+                          - Heq
+                        </button>
+                      </div>
+                      {cashSavings.log.slice(0, 5).map((m) => (
+                        <div key={m.id} style={S.goalRow}>
+                          <span style={{ ...S.goalText, color: m.amount >= 0 ? "#6B8F71" : "#A63D40" }}>
+                            {m.amount >= 0 ? "+" : ""}
+                            &euro;{m.amount.toFixed(0)}{m.note ? ` \u2014 ${m.note}` : ""}
+                          </span>
+                          <button onClick={() => removeSavingsMovement("cash", m.id)} style={S.habitRemove} aria-label="fshi">×</button>
+                        </div>
+                      ))}
+                    </div>
+
                     <div style={S.financeSummaryRow}>
                       <div style={S.financeSummaryCard}>
                         <div style={S.financeSummaryLabel}>Shpenzuar ky muaj</div>
@@ -1277,6 +1389,10 @@ const S = {
   methodToggleRow: { display: "flex", gap: 6 },
   methodToggleBtn: { fontFamily: "system-ui,sans-serif", fontSize: 12, padding: "6px 14px", borderRadius: 16, border: "1.5px solid #D8CFC0", background: "#FFFFFF", color: "#6B6255", cursor: "pointer" },
   expenseMethodTag: { fontFamily: "system-ui,sans-serif", fontSize: 10, color: "#9C9184", marginLeft: 6, border: "1px solid #D8CFC0", borderRadius: 8, padding: "1px 6px" },
+  savingsCard: { background: "#F7F3EC", border: "1px solid #D8CFC0", borderRadius: 10, padding: 14, display: "flex", flexDirection: "column", gap: 10 },
+  savingsHead: { display: "flex", justifyContent: "space-between", alignItems: "baseline" },
+  savingsTitle: { fontFamily: "system-ui,sans-serif", fontSize: 13, fontWeight: 600, color: "#22303C" },
+  savingsBalance: { fontSize: 20, fontWeight: 700, color: "#22303C" },
   quickRow: { display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" },
   tipsBox: { fontFamily: "system-ui,sans-serif", fontSize: 13, color: "#4A4238", lineHeight: 1.6, marginBottom: 16, display: "flex", flexDirection: "column", gap: 4 },
   tipRow: {},
