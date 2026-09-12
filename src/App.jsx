@@ -118,6 +118,9 @@ const RELATIONSHIP_TIPS = [
   "Cakto nje dalje me shoke te pakten 1 here ne jave — shoqeria mban baterite e mbushura.",
 ];
 
+const MOLTO_URL = "https://xkohyiaacogbllhbsehf.supabase.co/rest/v1";
+const MOLTO_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhrb2h5aWFhY29nYmxsaGJzZWhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1ODg4NDMsImV4cCI6MjEwMzE2NDg0M30.1_2D7CqxJY-cMEXQu56P5BwnqTuTYcCb6P6LpTtvVFA";
+
 const EMPTY_DAY = { priorities: ["", "", ""], done: [false, false, false], habits: {}, energy: null, note: "" };
 
 const APP_PASSWORD = "Goni2027_";
@@ -199,6 +202,53 @@ export default function JetaSistemi() {
 
   const [quickLog, setQuickLog] = useState([]);
   const [quickText, setQuickText] = useState("");
+
+  const [moltoState, setMoltoState] = useState({ status: "idle" });
+
+  const fetchMoltoStats = useCallback(async () => {
+    setMoltoState({ status: "loading" });
+    try {
+      const headers = { apikey: MOLTO_KEY, Authorization: `Bearer ${MOLTO_KEY}` };
+      const now = new Date();
+      const today = todayKey(now);
+      const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+      const sum = (arr, key) => arr.reduce((s, x) => s + (Number(x[key]) || 0), 0);
+
+      const [bToday, bMonth, msMonth, exMonth] = await Promise.all([
+        fetch(`${MOLTO_URL}/bookings?select=price&date=eq.${today}`, { headers }).then((r) => r.json()),
+        fetch(`${MOLTO_URL}/bookings?select=price&date=gte.${monthStart}&date=lte.${today}`, { headers }).then((r) => r.json()),
+        fetch(`${MOLTO_URL}/minisales?select=total&date=gte.${monthStart}&date=lte.${today}`, { headers }).then((r) => r.json()),
+        fetch(`${MOLTO_URL}/expenses?select=amount&date=gte.${monthStart}&date=lte.${today}`, { headers }).then((r) => r.json()),
+      ]);
+
+      const todayCount = Array.isArray(bToday) ? bToday.length : 0;
+      const todayTotal = Array.isArray(bToday) ? sum(bToday, "price") : 0;
+      const monthCount = Array.isArray(bMonth) ? bMonth.length : 0;
+      const monthBookings = Array.isArray(bMonth) ? sum(bMonth, "price") : 0;
+      const monthMinibar = Array.isArray(msMonth) ? sum(msMonth, "total") : 0;
+      const monthExpenses = Array.isArray(exMonth) ? sum(exMonth, "amount") : 0;
+      const monthRevenue = monthBookings + monthMinibar;
+
+      setMoltoState({
+        status: "ready",
+        todayCount,
+        todayTotal,
+        monthCount,
+        monthRevenue,
+        monthExpenses,
+        monthProfit: monthRevenue - monthExpenses,
+        updatedAt: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
+      });
+    } catch (e) {
+      setMoltoState({ status: "error" });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (tab === "biznes" && moltoState.status === "idle") {
+      fetchMoltoStats();
+    }
+  }, [tab, moltoState.status, fetchMoltoStats]);
 
   // ---------- load ----------
   useEffect(() => {
@@ -666,7 +716,35 @@ export default function JetaSistemi() {
                   <div style={S.bizCards}>
                     <div style={S.bizCard}>
                       <div style={S.bizCardTitle}>Molto Studios</div>
-                      <div style={S.bizCardText}>Analiza ditore dhe mujore e bookimeve, mini-barit dhe sherbimeve.</div>
+                      <div style={S.bizCardText}>Analiza direkt nga paneli i Molto Studios.</div>
+
+                      {moltoState.status === "loading" && <div style={S.emptyHint}>Duke marre te dhenat...</div>}
+                      {moltoState.status === "error" && <div style={S.emptyHint}>S'u lidh dot me Molto Studios. Provo perseri.</div>}
+                      {moltoState.status === "ready" && (
+                        <div style={S.moltoStats}>
+                          <div style={S.moltoStatRow}>
+                            <span style={S.moltoStatLabel}>Sot</span>
+                            <span style={S.moltoStatValue}>{moltoState.todayCount} rezervime &middot; {moltoState.todayTotal.toFixed(0)}&euro;</span>
+                          </div>
+                          <div style={S.moltoStatRow}>
+                            <span style={S.moltoStatLabel}>Ky muaj</span>
+                            <span style={S.moltoStatValue}>{moltoState.monthCount} rezervime &middot; te ardhura {moltoState.monthRevenue.toFixed(0)}&euro;</span>
+                          </div>
+                          <div style={S.moltoStatRow}>
+                            <span style={S.moltoStatLabel}>Shpenzime (muaj)</span>
+                            <span style={S.moltoStatValue}>{moltoState.monthExpenses.toFixed(0)}&euro;</span>
+                          </div>
+                          <div style={S.moltoStatRow}>
+                            <span style={S.moltoStatLabel}>Fitimi (muaj)</span>
+                            <span style={{ ...S.moltoStatValue, fontWeight: 700, color: a.color }}>{moltoState.monthProfit.toFixed(0)}&euro;</span>
+                          </div>
+                          <div style={S.moltoUpdated}>
+                            perditesuar ne {moltoState.updatedAt}
+                            <button onClick={fetchMoltoStats} style={S.moltoRefreshBtn} aria-label="rifresko">&#8635;</button>
+                          </div>
+                        </div>
+                      )}
+
                       <a href="https://molto-studios.vercel.app" target="_blank" rel="noreferrer" style={{ ...S.bizCardBtn, background: a.color }}>
                         Hap Molto Studios
                       </a>
@@ -987,6 +1065,12 @@ const S = {
   bizCardTitle: { fontSize: 15, fontWeight: 700, marginBottom: 4 },
   bizCardText: { fontFamily: "system-ui,sans-serif", fontSize: 13, color: "#6B6255", marginBottom: 10 },
   bizCardBtn: { display: "inline-block", fontFamily: "system-ui,sans-serif", fontSize: 13, padding: "8px 14px", borderRadius: 8, color: "#F6F1E8", textDecoration: "none" },
+  moltoStats: { fontFamily: "system-ui,sans-serif", display: "flex", flexDirection: "column", gap: 6, background: "#FFFFFF", border: "1px solid #D8CFC0", borderRadius: 8, padding: "10px 12px", marginBottom: 10 },
+  moltoStatRow: { display: "flex", justifyContent: "space-between", fontSize: 13 },
+  moltoStatLabel: { color: "#6B6255" },
+  moltoStatValue: { color: "#22303C" },
+  moltoUpdated: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, fontSize: 11, color: "#9C9184", marginTop: 2 },
+  moltoRefreshBtn: { background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#6B6255", padding: 0 },
   quickRow: { display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" },
   tipsBox: { fontFamily: "system-ui,sans-serif", fontSize: 13, color: "#4A4238", lineHeight: 1.6, marginBottom: 16, display: "flex", flexDirection: "column", gap: 4 },
   tipRow: {},
