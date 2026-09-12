@@ -502,28 +502,15 @@ export default function JetaSistemi() {
         <div>
           <div style={S.kicker}>Regjistri Ditor</div>
           <h1 style={S.title}>{dayLabelSq(key)}</h1>
+          <span style={{ ...S.saveIndicator, opacity: saveState === "saving" || saveState === "saved" ? 1 : 0 }}>
+            {saveState === "saving" ? "duke ruajtur..." : saveState === "saved" ? "ruajtur \u2713" : ""}
+          </span>
         </div>
         <div style={S.streakBox}>
           <div style={S.streakNum}>{streak}</div>
           <div style={S.streakLabel}>dite rresht</div>
         </div>
       </header>
-
-      <nav style={S.tabs}>
-        {[
-          { id: "sot", label: "Sot" },
-          { id: "fushat", label: "Fushat" },
-          { id: "kalendari", label: "Kalendari" },
-          { id: "historia", label: "Historia" },
-        ].map((t) => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{ ...S.tabBtn, ...(tab === t.id ? S.tabBtnActive : {}) }}>
-            {t.label}
-          </button>
-        ))}
-        <span style={{ ...S.saveIndicator, opacity: saveState === "saving" || saveState === "saved" ? 1 : 0 }}>
-          {saveState === "saving" ? "duke ruajtur..." : saveState === "saved" ? "ruajtur \u2713" : ""}
-        </span>
-      </nav>
 
       {tab === "sot" && (
         <main style={S.main}>
@@ -880,6 +867,24 @@ export default function JetaSistemi() {
       )}
 
       <footer style={S.footer}>e ruajtur vetem per ty, ne kete pajisje</footer>
+
+      <nav style={S.bottomNav}>
+        {[
+          { id: "sot", label: "Sot", icon: "\u270D\uFE0F" },
+          { id: "fushat", label: "Fushat", icon: "\uD83D\uDDC2\uFE0F" },
+          { id: "kalendari", label: "Kalendari", icon: "\uD83D\uDCC5" },
+          { id: "historia", label: "Historia", icon: "\uD83D\uDCCA" },
+        ].map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            style={{ ...S.bottomNavBtn, ...(tab === t.id ? S.bottomNavBtnActive : {}) }}
+          >
+            <span style={S.bottomNavIcon}>{t.icon}</span>
+            <span>{t.label}</span>
+          </button>
+        ))}
+      </nav>
     </div>
   );
 }
@@ -893,7 +898,7 @@ const css = `
 `;
 
 const S = {
-  page: { fontFamily: "'Iowan Old Style','Palatino Linotype',Georgia,serif", background: "#EFEAE1", color: "#22303C", minHeight: "100%", width: "100%", padding: "32px clamp(20px, 5vw, 64px) 56px", maxWidth: 1080, margin: "0 auto", boxSizing: "border-box" },
+  page: { fontFamily: "'Iowan Old Style','Palatino Linotype',Georgia,serif", background: "#EFEAE1", color: "#22303C", minHeight: "100%", width: "100%", padding: "32px clamp(20px, 5vw, 64px) calc(88px + env(safe-area-inset-bottom))", maxWidth: 1080, margin: "0 auto", boxSizing: "border-box" },
   loadingWrap: { minHeight: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "#EFEAE1" },
   loadingText: { fontFamily: "Georgia,serif", color: "#6B6255" },
   header: { display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderBottom: "2px solid #22303C", paddingBottom: 14, marginBottom: 6 },
@@ -902,10 +907,38 @@ const S = {
   streakBox: { textAlign: "center", minWidth: 64 },
   streakNum: { fontSize: 28, fontWeight: 700, color: "#BF9B30", lineHeight: 1 },
   streakLabel: { fontSize: 11, color: "#6B6255", marginTop: 2 },
-  tabs: { display: "flex", gap: 6, alignItems: "center", margin: "18px 0 22px", borderBottom: "1px solid #D8CFC0", flexWrap: "wrap" },
-  tabBtn: { fontFamily: "system-ui,sans-serif", fontSize: 14, padding: "8px 4px", marginRight: 14, background: "none", border: "none", borderBottom: "2px solid transparent", color: "#6B6255", cursor: "pointer" },
-  tabBtnActive: { color: "#22303C", borderBottom: "2px solid #A63D40", fontWeight: 600 },
-  saveIndicator: { marginLeft: "auto", fontSize: 11, color: "#6B8F71", fontFamily: "system-ui,sans-serif", transition: "opacity .3s" },
+  bottomNav: {
+    position: "fixed",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    display: "flex",
+    justifyContent: "space-around",
+    alignItems: "center",
+    background: "#F7F3EC",
+    borderTop: "1px solid #D8CFC0",
+    padding: "8px 4px calc(8px + env(safe-area-inset-bottom))",
+    maxWidth: 1080,
+    margin: "0 auto",
+    zIndex: 50,
+  },
+  bottomNavBtn: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 2,
+    flex: 1,
+    fontFamily: "system-ui,sans-serif",
+    fontSize: 11,
+    color: "#9C9184",
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    padding: "4px 2px",
+  },
+  bottomNavBtnActive: { color: "#22303C", fontWeight: 700 },
+  bottomNavIcon: { fontSize: 20, lineHeight: 1 },
+  saveIndicator: { display: "block", marginTop: 4, fontSize: 11, color: "#6B8F71", fontFamily: "system-ui,sans-serif", transition: "opacity .3s" },
   main: { display: "flex", flexDirection: "column", gap: 22 },
   entry: { borderBottom: "1px solid #D8CFC0", paddingBottom: 20 },
   entryHead: { display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 },
